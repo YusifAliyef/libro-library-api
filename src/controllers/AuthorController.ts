@@ -21,4 +21,34 @@ export class AuthorController {
       res.status(500).json({ error: error.message });
     }
   };
+
+  findOne = async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const result = await this.authorService.getAuthorById(id);
+      return res.status(200).json(result);
+    } catch (error: any) {
+      return res.status(404).json({ error: error.message });
+    }
+  };
+
+  update = async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      const result = await this.authorService.updateAuthor(id, req.body);
+      return res.status(200).json(result); 
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
+    }
+  };
+
+  delete = async (req: Request, res: Response) => {
+    try {
+      const id = Number(req.params.id);
+      await this.authorService.deleteAuthor(id);
+      return res.status(200).send({ message: "Yazıçı uğurla silindi" });
+    } catch (error: any) {
+      return res.status(404).json({ error: error.message });
+    }
+  };
 }

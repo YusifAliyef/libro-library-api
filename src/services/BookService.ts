@@ -31,4 +31,32 @@ export class BookService {
     });
     return books.map(BookResponseDto.fromEntity);
   }
+
+  async getBookById(id: number): Promise<BookResponseDto> {
+    const book = await this.bookRepository.findOneBy({ id });
+    if (!book) {
+      throw new Error("Kitab tapılmadı!");
+    }
+    return BookResponseDto.fromEntity(book);
+  }
+
+  async updateBook(id: number, dto: CreateBookDto): Promise<BookResponseDto> {
+    const book = await this.bookRepository.findOneBy({ id });
+    if (!book) {
+      throw new Error("Yenilənmək istənən kitab tapılmadı!");
+    }
+    book.title = dto.title;
+    book.isbn = dto.isbn;
+
+    const updated = await this.bookRepository.save(book);
+    return BookResponseDto.fromEntity(updated);
+  }
+
+  async deleteBook(id: number): Promise<void> {
+    const book = await this.bookRepository.findOneBy({ id });
+    if (!book) {
+      throw new Error("Yenilənmək istənən kitab tapılmadı!");
+    }
+    await this.bookRepository.remove(book);
+  }
 }
