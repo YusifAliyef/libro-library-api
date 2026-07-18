@@ -2,6 +2,7 @@ import express from "express";
 import { AppDataSource } from "./config/database";
 import apiRouter from "./routes"; 
 import dotenv from "dotenv";
+import { errorHandler } from "./middlewares/errorHandler";
 
 dotenv.config();
 
@@ -11,7 +12,10 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 
 
+
 app.use("/api", apiRouter);
+
+app.use(errorHandler);
 
 AppDataSource.initialize()
   .then(() => {

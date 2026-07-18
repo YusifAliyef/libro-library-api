@@ -1,13 +1,16 @@
 import { Router } from "express";
 import { MemberController } from "../controllers/MemberController";
+import { validationMiddleware } from "../middlewares/validationMiddleware";
+import { CreateMemberDto } from "../dtos/CreateMemberDto";
 
 const router = Router();
 const memberController = new MemberController();
 
-router.post("/", memberController.create);
+router.post("/", validationMiddleware(CreateMemberDto), memberController.create);
+router.put("/:id", validationMiddleware(CreateMemberDto), memberController.update);
+
 router.get("/", memberController.findAll);
 router.get("/:id", memberController.findOne);
-router.put("/:id", memberController.update);
 router.delete("/:id", memberController.delete);
 
 export default router;

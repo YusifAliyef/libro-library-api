@@ -1,13 +1,16 @@
 import { Router } from "express";
 import { AuthorController } from "../controllers/AuthorController";
+import { validationMiddleware } from "../middlewares/validationMiddleware";
+import { CreateAuthorDto } from "../dtos/CreateAuthorDto";
 
 const router = Router();
 const authorController = new AuthorController();
 
-router.post("/", authorController.create);
+router.post("/", validationMiddleware(CreateAuthorDto), authorController.create);
+router.put("/:id", validationMiddleware(CreateAuthorDto), authorController.update);
+
 router.get("/", authorController.findAll);
-router.get("/:id", authorController.findOne.bind(authorController));
-router.put("/:id", authorController.update.bind(authorController));
-router.delete("/:id", authorController.delete.bind(authorController));
+router.get("/:id", authorController.findOne);
+router.delete("/:id", authorController.delete);
 
 export default router;
