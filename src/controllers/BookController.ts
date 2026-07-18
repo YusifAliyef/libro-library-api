@@ -15,10 +15,18 @@ export class BookController {
 
   findAll = async (req: Request, res: Response) => {
     try {
-      const result = await this.bookService.getAllBooks();
-      res.status(200).json(result);
+      const { page, limit, sortBy, sortOrder } = req.query;
+
+      const result = await this.bookService.getAllBooks({
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        sortBy: sortBy as string,
+        sortOrder: sortOrder as "ASC" | "DESC",
+      });
+
+      return res.status(200).json(result);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: error.message });
     }
   };
   findOne = async (req: Request, res: Response) => {

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Length } from "class-validator";
+import { IsNotEmpty, IsString, Length, IsNumber } from "class-validator";
 
 export class CreateBookDto {
   @IsNotEmpty({ message: "Kitabın adı boş ola bilməz!" })
@@ -10,4 +10,8 @@ export class CreateBookDto {
   @IsString({ message: "ISBN mətn tipində olmalıdır!" })
   @Length(10, 20, { message: "ISBN nömrəsi düzgün uzunluqda olmalıdır (10-20 simvol)!" })
   isbn: string;
+
+  @IsNotEmpty({ message: "Müəllif (authorId) boş ola bilməz!" })
+  @IsNumber({}, { message: "Müəllif ID-si rəqəm tipində olmalıdır!" })
+  authorId: number; // Xətanı tamamilə həll edən sətir 🎯
 }

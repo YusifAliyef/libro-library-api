@@ -23,17 +23,51 @@ export class BookService {
     return BookResponseDto.fromEntity(saved);
   }
 
-  async getAllBooks(): Promise<BookResponseDto[]> {
-    const books = await this.bookRepository.find({
+  async getAllBooks(queryParams: {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: "ASC" | "DESC";
+  }): Promise<{
+    data: BookResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const page = Number(queryParams.page) || 1;
+    const limit = Number(queryParams.limit) || 10;
+    const sortBy = queryParams.sortBy || "id";
+    const sortOrder = queryParams.sortOrder === "DESC" ? "DESC" : "ASC";
+
+    const skip = (page - 1) * limit;
+
+    const [books, total] = await this.bookRepository.findAndCount({
       relations: {
         author: true,
       },
+      order: {
+        [sortBy]: sortOrder,
+      },
+      take: limit,
+      skip: skip,
     });
-    return books.map(BookResponseDto.fromEntity);
+
+    const mappedData = books.map((book) => BookResponseDto.fromEntity(book));
+
+    return {
+      data: mappedData,
+      total,
+      page,
+      limit,
+    };
   }
 
   async getBookById(id: number): Promise<BookResponseDto> {
-    const book = await this.bookRepository.findOneBy({ id });
+    const book = await this.bookRepository.findOne({
+      where: { id },
+      relations: { author: true },
+    });
+
     if (!book) {
       throw new Error("Kitab tapılmadı!");
     }
@@ -41,10 +75,25 @@ export class BookService {
   }
 
   async updateBook(id: number, dto: CreateBookDto): Promise<BookResponseDto> {
-    const book = await this.bookRepository.findOneBy({ id });
+    const book = await this.bookRepository.findOne({
+      where: { id },
+      relations: { author: true },
+    });
+
     if (!book) {
       throw new Error("Yenilənmək istənən kitab tapılmadı!");
     }
+
+    if (dto.authorId && book.author.id !== dto.authorId) {
+      const newAuthor = await this.authorRepository.findOneBy({
+        id: dto.authorId,
+      });
+      if (!newAuthor) {
+        throw new Error("Göstərilən yeni ID-li yazar tapılmadı!");
+      }
+      book.author = newAuthor;
+    }
+
     book.title = dto.title;
     book.isbn = dto.isbn;
 
@@ -55,7 +104,7 @@ export class BookService {
   async deleteBook(id: number): Promise<void> {
     const book = await this.bookRepository.findOneBy({ id });
     if (!book) {
-      throw new Error("Yenilənmək istənən kitab tapılmadı!");
+      throw new Error("Silinmək istənən kitab tapılmadı!");
     }
     await this.bookRepository.remove(book);
   }
