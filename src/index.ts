@@ -3,6 +3,10 @@ import { AppDataSource } from "./config/database";
 import apiRouter from "./routes"; 
 import dotenv from "dotenv";
 import { errorHandler } from "./middlewares/errorHandler";
+import swaggerUi from "swagger-ui-express";
+import * as swaggerDocument from "./swagger.json";
+
+
 
 dotenv.config();
 
@@ -16,6 +20,7 @@ app.use(express.json());
 app.use("/api", apiRouter);
 
 app.use(errorHandler);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 AppDataSource.initialize()
   .then(() => {

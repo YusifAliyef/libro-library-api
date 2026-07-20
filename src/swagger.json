@@ -1,0 +1,249 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Libro Library API",
+    "version": "1.0.0",
+    "description": "Kitabxana idarəetmə sistemi üçün tam CRUD və Validasiya dəstəkli API sənədləşməsi"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5050",
+      "description": "Lokal İnkişaf Serveri"
+    }
+  ],
+  "paths": {
+    "/api/authors": {
+      "post": {
+        "summary": "Yeni yazıçı yaradır",
+        "tags": ["Authors"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "example": "Nizami Gəncəvi" },
+                  "biography": { "type": "string", "example": "Dahi Azərbaycan şairi." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Yazıçı uğurla yaradıldı" },
+          "400": { "description": "Validasiya xətası" }
+        }
+      },
+      "get": {
+        "summary": "Bütün yazıçıları siyahılayır",
+        "tags": ["Authors"],
+        "responses": {
+          "200": { "description": "Uğurlu əməliyyat" }
+        }
+      }
+    },
+    "/api/authors/{id}": {
+      "get": {
+        "summary": "ID-yə görə yazıçını tapır",
+        "tags": ["Authors"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Uğurlu əməliyyat" },
+          "404": { "description": "Yazıçı tapılmadı" }
+        }
+      },
+      "put": {
+        "summary": "Yazıçı məlumatlarını yeniləyir",
+        "tags": ["Authors"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "biography": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Uğurlu yenilənmə" },
+          "404": { "description": "Yazıçı tapılmadı" }
+        }
+      },
+      "delete": {
+        "summary": "Yazıçını silir",
+        "tags": ["Authors"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Yazıçı uğurla silindi" },
+          "404": { "description": "Yazıçı tapılmadı" }
+        }
+      }
+    },
+    "/api/books": {
+      "post": {
+        "summary": "Yeni kitab yaradır",
+        "tags": ["Books"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "isbn", "authorId"],
+                "properties": {
+                  "title": { "type": "string", "example": "Sirlər Xəzinəsi" },
+                  "isbn": { "type": "string", "example": "978-9952-123-45-6" },
+                  "authorId": { "type": "integer", "example": 1 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Kitab uğurla yaradıldı" },
+          "400": { "description": "Validasiya və ya Müəllif tapılmadı xətası" }
+        }
+      },
+      "get": {
+        "summary": "Bütün kitabları pagination və sorting ilə gətirir",
+        "tags": ["Books"],
+        "parameters": [
+          { "name": "page", "in": "query", "description": "Səhifə nömrəsi", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "description": "Hər səhifədəki kitab sayı", "schema": { "type": "integer", "default": 1 } },
+          { "name": "sortBy", "in": "query", "description": "Çeşidləmə sahəsi", "schema": { "type": "string", "default": "id" } },
+          { "name": "sortOrder", "in": "query", "description": "Çeşidləmə istiqaməti", "schema": { "type": "string", "enum": ["ASC", "DESC"], "default": "ASC" } }
+        ],
+        "responses": {
+          "200": { "description": "Uğurlu əməliyyat (Məlumat və Metadata birlikdə)" }
+        }
+      }
+    },
+    "/api/books/{id}": {
+      "get": {
+        "summary": "ID-yə görə kitabı tapır",
+        "tags": ["Books"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Uğurlu əməliyyat" },
+          "404": { "description": "Kitab tapılmadı" }
+        }
+      },
+      "put": {
+        "summary": "Kitab məlumatlarını yeniləyir",
+        "tags": ["Books"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "isbn": { "type": "string" },
+                  "authorId": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Kitab uğurla yeniləndi" },
+          "404": { "description": "Kitab tapılmadı" }
+        }
+      },
+      "delete": {
+        "summary": "Kitabı silir",
+        "tags": ["Books"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Kitab uğurla silindi" },
+          "404": { "description": "Kitab tapılmadı" }
+        }
+      }
+    },
+    "/api/members": {
+      "post": {
+        "summary": "Yeni üzv/istifadəçi yaradır",
+        "tags": ["Members"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fullName", "email"],
+                "properties": {
+                  "fullName": { "type": "string", "example": "Əli Məmmədov" },
+                  "email": { "type": "string", "example": "ali@mail.com" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Üzv uğurla yaradıldı" },
+          "400": { "description": "Validasiya xətası (məsələn, yanlış email formatı)" }
+        }
+      },
+      "get": {
+        "summary": "Bütün üzvləri siyahılayır",
+        "tags": ["Members"],
+        "responses": {
+          "200": { "description": "Uğurlu əməliyyat" }
+        }
+      }
+    },
+    "/api/members/{id}": {
+      "get": {
+        "summary": "ID-yə görə üzvü tapır",
+        "tags": ["Members"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Uğurlu əməliyyat" },
+          "404": { "description": "Üzv tapılmadı" }
+        }
+      },
+      "put": {
+        "summary": "Üzv məlumatlarını yeniləyir",
+        "tags": ["Members"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullName": { "type": "string" },
+                  "email": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Üzv uğurla yeniləndi" },
+          "404": { "description": "Üzv tapılmadı" }
+        }
+      },
+      "delete": {
+        "summary": "Üzvü silir",
+        "tags": ["Members"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Üzv uğurla silindi" },
+          "404": { "description": "Üzv tapılmadı" }
+        }
+      }
+    }
+  }
+}
