@@ -3,17 +3,38 @@ import { BookController } from "../controllers/BookController";
 import { validationMiddleware } from "../middlewares/validationMiddleware";
 import { CreateBookDto } from "../dtos/CreateBookDto";
 import { authenticateJwt } from "../middlewares/authMiddleware";
+import { authorizeRoles } from "../middlewares/roleMiddleware";
+import { UserRole } from "../entities/User";
 
 const router = Router();
 const bookController = new BookController();
 
-// İctimai (Public) marşrutlar - Token tələb olunmur
+// Hər kəs baxa bilər
 router.get("/", bookController.findAll);
 router.get("/:id", bookController.findOne);
 
-// Qorunan (Protected) marşrutlar - Token tələb olunur (authenticateJwt)
-router.post("/", authenticateJwt, validationMiddleware(CreateBookDto), bookController.create);
-router.put("/:id", authenticateJwt, validationMiddleware(CreateBookDto), bookController.update);
-router.delete("/:id", authenticateJwt, bookController.delete);
+// USER və ADMIN yeni kitab yarada bilər
+router.post(
+  "/",
+  authenticateJwt,
+  authorizeRoles(UserRole.USER, UserRole.ADMIN),
+  validationMiddleware(CreateBookDto),
+  bookController.create,
+);
+
+// Yalnız ADMIN yeniləyə və silə bilər
+router.put(
+  "/:id",
+  authenticateJwt,
+  authorizeRoles(UserRole.ADMIN),
+  validationMiddleware(CreateBookDto),
+  bookController.update,
+);
+router.delete(
+  "/:id",
+  authenticateJwt,
+  authorizeRoles(UserRole.ADMIN),
+  bookController.delete,
+);
 
 export default router;
