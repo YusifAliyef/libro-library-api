@@ -21,16 +21,15 @@ Layihə məlumatların təhlükəsizliyini, kodun oxunurluğunu və test edilə 
 * **Çərçivə (Framework):** Express.js
 * **ORM:** TypeORM
 * **Verilənlər Bazası:** PostgreSQL
+* **Təhlükəsizlik:** JWT (JSON Web Token), BCrypt
 * **Validasiya:** class-validator & class-transformer
 * **Test Platforması:** Jest & ts-jest
-* **Sənədləşmə:** Swagger UI & OpenAPI 3.0
 
 ---
 
 ## 🚀 Quraşdırma və İşə Salma Bələdçisi
 
 ### 1. Layihəni Klonlayın
-İlk öncə repozitoriyanı yerli mühitinizə yükləyin:
 ```bash
 git clone [https://github.com/istifadeci_adin/libro-library-api.git](https://github.com/istifadeci_adin/libro-library-api.git)
 cd libro-library-api
