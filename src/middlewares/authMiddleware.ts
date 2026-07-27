@@ -1,33 +1,42 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { UserRole } from "../entities/User";
-
-interface TokenPayload {
-  userId: number;
-  role: UserRole;
-}
+import jwt, { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
 
 export const authenticateJwt = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Giriş icazəsi yoxdur: Token təmin edilməyib!" });
+    return res.status(401).json({ 
+      error: "Unauthorized", 
+      message: "Giriş icazəsi yoxdur: Token təmin edilməyib!" 
+    });
   }
 
   const token = authHeader.split(" ")[1];
 
   try {
     const secret = process.env.JWT_SECRET || "default_secret";
-    const decoded = jwt.verify(token, secret) as TokenPayload;
-
-    //Məlumat birbaşa token payload-dan req.user-ə mənimsədilir
-    req.user = {
-      userId: decoded.userId,
-      role: decoded.role
-    };
-
+    const decoded = jwt.verify(token, secret) as any;
+    req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Etibarsız və ya vaxtı bitmiş token!" });
+    // Token vaxtı bitdikdə xüsusi idarəetmə
+    if (error instanceof TokenExpiredError) {
+      return res.status(401).json({ 
+        error: "Unauthorized", 
+        message: "Tokenin istifadə müddəti bitmişdir. Xahiş olunur yenidən daxil olun!" 
+      });
+    }
+
+    if (error instanceof JsonWebTokenError) {
+      return res.status(401).json({ 
+        error: "Unauthorized", 
+        message: "Etibarsız və ya zədələnmiş token!" 
+      });
+    }
+
+    return res.status(401).json({ 
+      error: "Unauthorized", 
+      message: "Autentifikasiya xətası baş verdi!" 
+    });
   }
 };
