@@ -1,12 +1,15 @@
 import { AppDataSource } from "../config/database";
 import { Book } from "../entities/Book";
 import { Author } from "../entities/Author";
+import { Category } from "../entities/Category";
+import { In } from "typeorm";
 import { CreateBookDto } from "../dtos/CreateBookDto";
 import { BookResponseDto } from "../dtos/BookResponseDto";
 
 export class BookService {
   private bookRepository = AppDataSource.getRepository(Book);
   private authorRepository = AppDataSource.getRepository(Author);
+  private categoryRepository = AppDataSource.getRepository(Category);
 
   async createBook(dto: CreateBookDto): Promise<BookResponseDto> {
     const author = await this.authorRepository.findOneBy({ id: dto.authorId });
@@ -19,6 +22,13 @@ export class BookService {
     book.isbn = dto.isbn;
     book.author = author;
 
+    if (dto.categoryIds && dto.categoryIds.length > 0) {
+      const categories = await this.categoryRepository.findBy({
+        id: In(dto.categoryIds),
+      });
+      book.categories = categories;
+    }
+
     const saved = await this.bookRepository.save(book);
     return BookResponseDto.fromEntity(saved);
   }
@@ -28,6 +38,9 @@ export class BookService {
     limit?: number;
     sortBy?: string;
     sortOrder?: "ASC" | "DESC";
+    title?: string;
+    authorName?: string;
+    categoryId?: number;
   }): Promise<{
     data: BookResponseDto[];
     total: number;
@@ -38,19 +51,36 @@ export class BookService {
     const limit = Number(queryParams.limit) || 10;
     const sortBy = queryParams.sortBy || "id";
     const sortOrder = queryParams.sortOrder === "DESC" ? "DESC" : "ASC";
-
     const skip = (page - 1) * limit;
 
-    const [books, total] = await this.bookRepository.findAndCount({
-      relations: {
-        author: true,
-      },
-      order: {
-        [sortBy]: sortOrder,
-      },
-      take: limit,
-      skip: skip,
-    });
+    const query = this.bookRepository
+      .createQueryBuilder("book")
+      .leftJoinAndSelect("book.author", "author")
+      .leftJoinAndSelect("book.categories", "category");
+
+    if (queryParams.title) {
+      query.andWhere("LOWER(book.title) LIKE LOWER(:title)", {
+        title: `%${queryParams.title}%`,
+      });
+    }
+
+    if (queryParams.authorName) {
+      query.andWhere("LOWER(author.name) LIKE LOWER(:authorName)", {
+        authorName: `%${queryParams.authorName}%`,
+      });
+    }
+
+    if (queryParams.categoryId) {
+      query.andWhere("category.id = :categoryId", {
+        categoryId: queryParams.categoryId,
+      });
+    }
+
+    const [books, total] = await query
+      .orderBy(`book.${sortBy}`, sortOrder)
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
 
     const mappedData = books.map((book) => BookResponseDto.fromEntity(book));
 
@@ -65,7 +95,7 @@ export class BookService {
   async getBookById(id: number): Promise<BookResponseDto> {
     const book = await this.bookRepository.findOne({
       where: { id },
-      relations: { author: true },
+      relations: { author: true, categories: true },
     });
 
     if (!book) {
@@ -77,7 +107,7 @@ export class BookService {
   async updateBook(id: number, dto: CreateBookDto): Promise<BookResponseDto> {
     const book = await this.bookRepository.findOne({
       where: { id },
-      relations: { author: true },
+      relations: { author: true, categories: true },
     });
 
     if (!book) {
@@ -92,6 +122,13 @@ export class BookService {
         throw new Error("Göstərilən yeni ID-li yazar tapılmadı!");
       }
       book.author = newAuthor;
+    }
+
+    if (dto.categoryIds) {
+      const categories = await this.categoryRepository.findBy({
+        id: In(dto.categoryIds),
+      });
+      book.categories = categories;
     }
 
     book.title = dto.title;
