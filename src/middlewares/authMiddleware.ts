@@ -19,7 +19,6 @@ export const authenticateJwt = (req: Request, res: Response, next: NextFunction)
     req.user = decoded;
     next();
   } catch (error) {
-    // Token vaxtı bitdikdə xüsusi idarəetmə
     if (error instanceof TokenExpiredError) {
       return res.status(401).json({ 
         error: "Unauthorized", 

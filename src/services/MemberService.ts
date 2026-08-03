@@ -2,6 +2,7 @@ import { AppDataSource } from "../config/database";
 import { Member } from "../entities/Member";
 import { CreateMemberDto } from "../dtos/CreateMemberDto";
 import { MemberResponseDto } from "../dtos/MemberResponseDto";
+import { AppError } from "../errors/AppError";
 
 export class MemberService {
   private memberRepository = AppDataSource.getRepository(Member);
@@ -23,18 +24,18 @@ export class MemberService {
   async getMemberById(id: number): Promise<MemberResponseDto> {
     const member = await this.memberRepository.findOneBy({ id });
     if (!member) {
-      throw new Error("Üzv tapılmadı!");
+      throw new AppError("Üzv tapılmadı!", 404);
     }
     return MemberResponseDto.fromEntity(member);
   }
 
   async updateMember(
     id: number,
-    dto: CreateMemberDto,
+    dto: CreateMemberDto
   ): Promise<MemberResponseDto> {
     const member = await this.memberRepository.findOneBy({ id });
     if (!member) {
-      throw new Error("Yenilənmək istənən üzv tapılmadı!");
+      throw new AppError("Yenilənmək istənən üzv tapılmadı!", 404);
     }
 
     member.fullName = dto.fullName;
@@ -47,7 +48,7 @@ export class MemberService {
   async deleteMember(id: number): Promise<void> {
     const member = await this.memberRepository.findOneBy({ id });
     if (!member) {
-      throw new Error("Silinmək istənən üzv tapılmadı!");
+      throw new AppError("Silinmək istənən üzv tapılmadı!", 404);
     }
     await this.memberRepository.remove(member);
   }

@@ -2,6 +2,7 @@ import { AppDataSource } from "../config/database";
 import { Author } from "../entities/Author";
 import { CreateAuthorDto } from "../dtos/CreateAuthorDto";
 import { AuthorResponseDto } from "../dtos/AuthorResponseDto";
+import { AppError } from "../errors/AppError";
 
 export class AuthorService {
   private authorRepository = AppDataSource.getRepository(Author);
@@ -56,18 +57,18 @@ export class AuthorService {
   async getAuthorById(id: number): Promise<AuthorResponseDto> {
     const author = await this.authorRepository.findOneBy({ id });
     if (!author) {
-      throw new Error("Yazıçı tapılmadı!");
+      throw new AppError("Yazıçı tapılmadı!", 404);
     }
     return AuthorResponseDto.fromEntity(author);
   }
 
   async updateAuthor(
     id: number,
-    dto: CreateAuthorDto,
+    dto: CreateAuthorDto
   ): Promise<AuthorResponseDto> {
     const author = await this.authorRepository.findOneBy({ id });
     if (!author) {
-      throw new Error("Yenilənmək istənən yazıçı tapılmadı!");
+      throw new AppError("Yenilənmək istənən yazıçı tapılmadı!", 404);
     }
 
     author.name = dto.name;
@@ -80,7 +81,7 @@ export class AuthorService {
   async deleteAuthor(id: number): Promise<void> {
     const author = await this.authorRepository.findOneBy({ id });
     if (!author) {
-      throw new Error("Silinmək istənən yazıçı tapılmadı!");
+      throw new AppError("Silinmək istənən yazıçı tapılmadı!", 404);
     }
     await this.authorRepository.remove(author);
   }

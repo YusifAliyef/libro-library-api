@@ -5,6 +5,7 @@ import { Category } from "../entities/Category";
 import { In } from "typeorm";
 import { CreateBookDto } from "../dtos/CreateBookDto";
 import { BookResponseDto } from "../dtos/BookResponseDto";
+import { AppError } from "../errors/AppError";
 
 export class BookService {
   private bookRepository = AppDataSource.getRepository(Book);
@@ -14,7 +15,7 @@ export class BookService {
   async createBook(dto: CreateBookDto): Promise<BookResponseDto> {
     const author = await this.authorRepository.findOneBy({ id: dto.authorId });
     if (!author) {
-      throw new Error("Göstərilən ID-li yazar tapılmadı!");
+      throw new AppError("Göstərilən ID-li yazar tapılmadı!", 404);
     }
 
     const book = new Book();
@@ -99,7 +100,7 @@ export class BookService {
     });
 
     if (!book) {
-      throw new Error("Kitab tapılmadı!");
+      throw new AppError("Kitab tapılmadı!", 404);
     }
     return BookResponseDto.fromEntity(book);
   }
@@ -111,7 +112,7 @@ export class BookService {
     });
 
     if (!book) {
-      throw new Error("Yenilənmək istənən kitab tapılmadı!");
+      throw new AppError("Yenilənmək istənən kitab tapılmadı!", 404);
     }
 
     if (dto.authorId && book.author.id !== dto.authorId) {
@@ -119,7 +120,7 @@ export class BookService {
         id: dto.authorId,
       });
       if (!newAuthor) {
-        throw new Error("Göstərilən yeni ID-li yazar tapılmadı!");
+        throw new AppError("Göstərilən yeni ID-li yazar tapılmadı!", 404);
       }
       book.author = newAuthor;
     }
@@ -141,7 +142,7 @@ export class BookService {
   async deleteBook(id: number): Promise<void> {
     const book = await this.bookRepository.findOneBy({ id });
     if (!book) {
-      throw new Error("Silinmək istənən kitab tapılmadı!");
+      throw new AppError("Silinmək istənən kitab tapılmadı!", 404);
     }
     await this.bookRepository.remove(book);
   }

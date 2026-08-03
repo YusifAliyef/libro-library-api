@@ -2,6 +2,7 @@ import { AppDataSource } from "../config/database";
 import { Category } from "../entities/Category";
 import { CreateCategoryDto } from "../dtos/CreateCategoryDto";
 import { CategoryResponseDto } from "../dtos/CategoryResponseDto";
+import { AppError } from "../errors/AppError";
 
 export class CategoryService {
   private categoryRepository = AppDataSource.getRepository(Category);
@@ -22,18 +23,18 @@ export class CategoryService {
   async getCategoryById(id: number): Promise<CategoryResponseDto> {
     const category = await this.categoryRepository.findOneBy({ id });
     if (!category) {
-      throw new Error("Kateqoriya tapılmadı!");
+      throw new AppError("Kateqoriya tapılmadı!", 404);
     }
     return CategoryResponseDto.fromEntity(category);
   }
 
   async updateCategory(
     id: number,
-    dto: CreateCategoryDto,
+    dto: CreateCategoryDto
   ): Promise<CategoryResponseDto> {
     const category = await this.categoryRepository.findOneBy({ id });
     if (!category) {
-      throw new Error("Yenilənmək istənən kateqoriya tapılmadı!");
+      throw new AppError("Yenilənmək istənən kateqoriya tapılmadı!", 404);
     }
 
     category.name = dto.name;
@@ -45,7 +46,7 @@ export class CategoryService {
   async deleteCategory(id: number): Promise<void> {
     const category = await this.categoryRepository.findOneBy({ id });
     if (!category) {
-      throw new Error("Silinmək istənən kateqoriya tapılmadı!");
+      throw new AppError("Silinmək istənən kateqoriya tapılmadı!", 404);
     }
     await this.categoryRepository.remove(category);
   }

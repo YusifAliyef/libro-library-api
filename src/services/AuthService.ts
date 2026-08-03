@@ -3,6 +3,7 @@ import { User, UserRole } from "../entities/User";
 import { hashPassword, comparePassword } from "../utils/password";
 import { generateToken } from "../utils/jwt";
 import { RegisterDto, LoginDto, AuthResponseDto } from "../dtos/AuthDto";
+import { AppError } from "../errors/AppError";
 
 export class AuthService {
   private userRepository = AppDataSource.getRepository(User);
@@ -12,7 +13,7 @@ export class AuthService {
 
     const existingUser = await this.userRepository.findOneBy({ email });
     if (existingUser) {
-      throw new Error("Bu email artıq istifadə olunur!");
+      throw new AppError("Bu email artıq istifadə olunur!", 400);
     }
 
     const hashedPassword = await hashPassword(password);
@@ -42,12 +43,12 @@ export class AuthService {
 
     const user = await this.userRepository.findOneBy({ email });
     if (!user) {
-      throw new Error("Email və ya şifrə yanlışdır!");
+      throw new AppError("Email və ya şifrə yanlışdır!", 401);
     }
 
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
-      throw new Error("Email və ya şifrə yanlışdır!");
+      throw new AppError("Email və ya şifrə yanlışdır!", 401);
     }
 
     const token = generateToken({ userId: user.id, role: user.role });
