@@ -15,8 +15,16 @@ export class AuthorController {
 
   findAll = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await this.authorService.getAllAuthors();
-      res.status(200).json(result);
+      const { page, limit, name, biography } = req.query;
+
+      const result = await this.authorService.getFilteredAuthors({
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        name: name as string,
+        biography: biography as string,
+      });
+
+      return res.status(200).json(result);
     } catch (error) {
       next(error);
     }

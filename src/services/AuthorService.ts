@@ -15,9 +15,42 @@ export class AuthorService {
     return AuthorResponseDto.fromEntity(saved);
   }
 
-  async getAllAuthors(): Promise<AuthorResponseDto[]> {
-    const authors = await this.authorRepository.find();
-    return authors.map(AuthorResponseDto.fromEntity);
+  async getFilteredAuthors(queryParams: {
+    page?: number;
+    limit?: number;
+    name?: string;
+    biography?: string;
+  }) {
+    const page = Number(queryParams.page) || 1;
+    const limit = Number(queryParams.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const query = this.authorRepository.createQueryBuilder("author");
+
+    if (queryParams.name) {
+      query.andWhere("LOWER(author.name) LIKE LOWER(:name)", {
+        name: `%${queryParams.name}%`,
+      });
+    }
+
+    if (queryParams.biography) {
+      query.andWhere("LOWER(author.biography) LIKE LOWER(:biography)", {
+        biography: `%${queryParams.biography}%`,
+      });
+    }
+
+    const [authors, total] = await query
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data: authors.map(AuthorResponseDto.fromEntity),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async getAuthorById(id: number): Promise<AuthorResponseDto> {
