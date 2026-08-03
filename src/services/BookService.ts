@@ -34,6 +34,46 @@ export class BookService {
     return BookResponseDto.fromEntity(saved);
   }
 
+  async createBookWithTransaction(
+    dto: CreateBookDto,
+  ): Promise<BookResponseDto> {
+    const queryRunner = AppDataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const author = await queryRunner.manager.findOneBy(Author, {
+        id: dto.authorId,
+      });
+      if (!author) {
+        throw new AppError("Göstərilən ID-li yazar tapılmadı!", 404);
+      }
+
+      const book = new Book();
+      book.title = dto.title;
+      book.isbn = dto.isbn;
+      book.author = author;
+
+      if (dto.categoryIds && dto.categoryIds.length > 0) {
+        const categories = await queryRunner.manager.findBy(Category, {
+          id: In(dto.categoryIds),
+        });
+        book.categories = categories;
+      }
+
+      const savedBook = await queryRunner.manager.save(book);
+
+      await queryRunner.commitTransaction();
+      return BookResponseDto.fromEntity(savedBook);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async getAllBooks(queryParams: {
     page?: number;
     limit?: number;
