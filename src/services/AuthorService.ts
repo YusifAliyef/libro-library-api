@@ -26,7 +26,9 @@ export class AuthorService {
     const limit = Number(queryParams.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const query = this.authorRepository.createQueryBuilder("author");
+    const query = this.authorRepository
+      .createQueryBuilder("author")
+      .leftJoinAndSelect("author.books", "books");
 
     if (queryParams.name) {
       query.andWhere("LOWER(author.name) LIKE LOWER(:name)", {
@@ -62,9 +64,18 @@ export class AuthorService {
     return AuthorResponseDto.fromEntity(author);
   }
 
+  async getAllAuthorsWithBooks(): Promise<AuthorResponseDto[]> {
+    const authors = await AppDataSource.getRepository(Author)
+      .createQueryBuilder("author")
+      .leftJoinAndSelect("author.books", "books")
+      .getMany();
+
+    return authors.map((author) => AuthorResponseDto.fromEntity(author));
+  }
+
   async updateAuthor(
     id: number,
-    dto: CreateAuthorDto
+    dto: CreateAuthorDto,
   ): Promise<AuthorResponseDto> {
     const author = await this.authorRepository.findOneBy({ id });
     if (!author) {

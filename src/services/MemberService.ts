@@ -29,9 +29,18 @@ export class MemberService {
     return MemberResponseDto.fromEntity(member);
   }
 
+  async getAllMembersWithBorrowings(): Promise<MemberResponseDto[]> {
+    const members = await AppDataSource.getRepository(Member)
+      .createQueryBuilder("member")
+      .leftJoinAndSelect("member.borrowings", "borrowings")
+      .getMany();
+
+    return members.map((member) => MemberResponseDto.fromEntity(member));
+  }
+  
   async updateMember(
     id: number,
-    dto: CreateMemberDto
+    dto: CreateMemberDto,
   ): Promise<MemberResponseDto> {
     const member = await this.memberRepository.findOneBy({ id });
     if (!member) {

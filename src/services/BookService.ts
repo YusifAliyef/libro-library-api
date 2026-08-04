@@ -133,6 +133,16 @@ export class BookService {
     };
   }
 
+  async getAllBooksWithRelations(): Promise<BookResponseDto[]> {
+    const books = await AppDataSource.getRepository(Book)
+      .createQueryBuilder("book")
+      .leftJoinAndSelect("book.author", "author")
+      .leftJoinAndSelect("book.categories", "categories")
+      .getMany();
+
+    return books.map((book) => BookResponseDto.fromEntity(book));
+  }
+
   async getBookById(id: number): Promise<BookResponseDto> {
     const book = await this.bookRepository.findOne({
       where: { id },
