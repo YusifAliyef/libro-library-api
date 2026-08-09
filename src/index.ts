@@ -5,7 +5,8 @@ import dotenv from "dotenv";
 import { errorHandler } from "./middlewares/errorHandler";
 import swaggerUi from "swagger-ui-express";
 import * as swaggerDocument from "./swagger.json";
-
+import fs from "fs";
+import path from "path";
 
 
 
@@ -16,7 +17,12 @@ const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 
+const uploadDir = path.join(__dirname, "../uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
+app.use("/uploads", express.static(uploadDir));
 
 app.use("/api", apiRouter);
 

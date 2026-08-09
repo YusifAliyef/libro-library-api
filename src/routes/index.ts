@@ -4,6 +4,7 @@ import bookRoutes from "./bookRoutes";
 import memberRoutes from "./memberRoutes";
 import authRoutes from "./authRoutes";
 import categoryRoutes from "./categoryRoutes";
+import fileRoutes from "./fileRoutes";
 
 const apiRouter = Router();
 
@@ -12,5 +13,6 @@ apiRouter.use("/books", bookRoutes);
 apiRouter.use("/members", memberRoutes);
 apiRouter.use("/auth", authRoutes);
 apiRouter.use("/categories", categoryRoutes);
+apiRouter.use("/files", fileRoutes);
 
 export default apiRouter;
