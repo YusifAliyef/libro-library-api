@@ -3,6 +3,7 @@ import { Author } from "../entities/Author";
 import { CreateAuthorDto } from "../dtos/CreateAuthorDto";
 import { AuthorResponseDto } from "../dtos/AuthorResponseDto";
 import { AppError } from "../errors/AppError";
+import { cache } from "../config/cache";
 
 export class AuthorService {
   private authorRepository = AppDataSource.getRepository(Author);
@@ -22,6 +23,13 @@ export class AuthorService {
     name?: string;
     biography?: string;
   }) {
+    const cacheKey = `authors_${JSON.stringify(queryParams)}`;
+    const cachedData = cache.get<any>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
     const page = Number(queryParams.page) || 1;
     const limit = Number(queryParams.limit) || 10;
     const skip = (page - 1) * limit;
@@ -47,13 +55,17 @@ export class AuthorService {
       .take(limit)
       .getManyAndCount();
 
-    return {
+    const result = {
       data: authors.map(AuthorResponseDto.fromEntity),
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
     };
+
+    cache.set(cacheKey, result);
+
+    return result;
   }
 
   async getAuthorById(id: number): Promise<AuthorResponseDto> {

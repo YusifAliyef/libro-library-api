@@ -3,7 +3,7 @@ import { Member } from "../entities/Member";
 import { CreateMemberDto } from "../dtos/CreateMemberDto";
 import { MemberResponseDto } from "../dtos/MemberResponseDto";
 import { AppError } from "../errors/AppError";
-
+import { cache } from "../config/cache";
 export class MemberService {
   private memberRepository = AppDataSource.getRepository(Member);
 
@@ -17,8 +17,24 @@ export class MemberService {
   }
 
   async getAllMembers(): Promise<MemberResponseDto[]> {
-    const members = await this.memberRepository.find();
-    return members.map((member) => MemberResponseDto.fromEntity(member));
+    const cacheKey = "all_members";
+    const cachedData = cache.get<MemberResponseDto[]>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const members = await AppDataSource.getRepository(Member)
+      .createQueryBuilder("member")
+      .leftJoinAndSelect("member.borrowings", "borrowings")
+      .getMany();
+
+    const result = members.map((member) =>
+      MemberResponseDto.fromEntity(member),
+    );
+
+    cache.set(cacheKey, result);
+    return result;
   }
 
   async getMemberById(id: number): Promise<MemberResponseDto> {
@@ -37,7 +53,7 @@ export class MemberService {
 
     return members.map((member) => MemberResponseDto.fromEntity(member));
   }
-  
+
   async updateMember(
     id: number,
     dto: CreateMemberDto,

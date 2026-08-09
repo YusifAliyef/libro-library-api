@@ -3,6 +3,7 @@ import { Category } from "../entities/Category";
 import { CreateCategoryDto } from "../dtos/CreateCategoryDto";
 import { CategoryResponseDto } from "../dtos/CategoryResponseDto";
 import { AppError } from "../errors/AppError";
+import { cache } from "../config/cache";
 
 export class CategoryService {
   private categoryRepository = AppDataSource.getRepository(Category);
@@ -16,8 +17,18 @@ export class CategoryService {
   }
 
   async getAllCategories(): Promise<CategoryResponseDto[]> {
-    const categories = await this.categoryRepository.find();
-    return categories.map(CategoryResponseDto.fromEntity);
+    const cacheKey = "all_categories";
+    const cachedData = cache.get<CategoryResponseDto[]>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const categories = await AppDataSource.getRepository(Category).find();
+    const result = categories.map((cat) => CategoryResponseDto.fromEntity(cat));
+
+    cache.set(cacheKey, result);
+    return result;
   }
 
   async getCategoryById(id: number): Promise<CategoryResponseDto> {
@@ -30,7 +41,7 @@ export class CategoryService {
 
   async updateCategory(
     id: number,
-    dto: CreateCategoryDto
+    dto: CreateCategoryDto,
   ): Promise<CategoryResponseDto> {
     const category = await this.categoryRepository.findOneBy({ id });
     if (!category) {

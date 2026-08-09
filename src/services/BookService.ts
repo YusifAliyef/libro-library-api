@@ -6,7 +6,7 @@ import { In } from "typeorm";
 import { CreateBookDto } from "../dtos/CreateBookDto";
 import { BookResponseDto } from "../dtos/BookResponseDto";
 import { AppError } from "../errors/AppError";
-
+import { cache } from "../config/cache";
 export class BookService {
   private bookRepository = AppDataSource.getRepository(Book);
   private authorRepository = AppDataSource.getRepository(Author);
@@ -88,6 +88,13 @@ export class BookService {
     page: number;
     limit: number;
   }> {
+    const cacheKey = `books_${JSON.stringify(queryParams)}`;
+    const cachedData = cache.get<any>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
     const page = Number(queryParams.page) || 1;
     const limit = Number(queryParams.limit) || 10;
     const sortBy = queryParams.sortBy || "id";
@@ -125,12 +132,11 @@ export class BookService {
 
     const mappedData = books.map((book) => BookResponseDto.fromEntity(book));
 
-    return {
-      data: mappedData,
-      total,
-      page,
-      limit,
-    };
+    const result = { data: mappedData, total, page, limit };
+
+    cache.set(cacheKey, result);
+
+    return result;
   }
 
   async getAllBooksWithRelations(): Promise<BookResponseDto[]> {
