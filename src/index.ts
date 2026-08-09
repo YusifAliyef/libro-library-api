@@ -1,14 +1,13 @@
 import express from "express";
 import { AppDataSource } from "./config/database";
-import apiRouter from "./routes"; 
+import apiRouter from "./routes";
 import dotenv from "dotenv";
 import { errorHandler } from "./middlewares/errorHandler";
 import swaggerUi from "swagger-ui-express";
 import * as swaggerDocument from "./swagger.json";
 import fs from "fs";
 import path from "path";
-
-
+import { initScheduledTasks } from "./config/scheduler";
 
 dotenv.config();
 
@@ -32,6 +31,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 AppDataSource.initialize()
   .then(() => {
     console.log("PostgreSQL bazasına uğurla qoşulduq!");
+    initScheduledTasks();
     app.listen(PORT, () => {
       console.log(`Serverimiz ${PORT} portunda fəaliyyət göstərir.`);
     });
