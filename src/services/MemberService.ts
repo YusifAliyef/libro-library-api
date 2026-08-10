@@ -3,7 +3,8 @@ import { Member } from "../entities/Member";
 import { CreateMemberDto } from "../dtos/CreateMemberDto";
 import { MemberResponseDto } from "../dtos/MemberResponseDto";
 import { AppError } from "../errors/AppError";
-import { cache } from "../config/cache";
+import { CacheService } from "../utils/cacheService";
+
 export class MemberService {
   private memberRepository = AppDataSource.getRepository(Member);
 
@@ -13,12 +14,57 @@ export class MemberService {
     member.email = dto.email;
 
     const saved = await this.memberRepository.save(member);
+
+    CacheService.invalidatePattern("members");
+
     return MemberResponseDto.fromEntity(saved);
   }
 
   async getAllMembers(): Promise<MemberResponseDto[]> {
-    const cacheKey = "all_members";
-    const cachedData = cache.get<MemberResponseDto[]>(cacheKey);
+    const cacheKey = "members_all";
+    const cachedData = CacheService.get<MemberResponseDto[]>(cacheKey);
+
+    if (cachedData) {
+      console.log("[CACHE HIT] Üzvlər keşdən gətirildi.");
+      return cachedData;
+    }
+
+    const members = await AppDataSource.getRepository(Member)
+      .createQueryBuilder("member")
+      .leftJoinAndSelect("member.borrowings", "borrowings")
+      .getMany();
+
+    const result = members.map((member) =>
+      MemberResponseDto.fromEntity(member),
+    );
+
+    CacheService.set(cacheKey, result, 300);
+
+    return result;
+  }
+
+  async getMemberById(id: number): Promise<MemberResponseDto> {
+    const cacheKey = `members_id_${id}`;
+    const cachedData = CacheService.get<MemberResponseDto>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const member = await this.memberRepository.findOneBy({ id });
+    if (!member) {
+      throw new AppError("Üzv tapılmadı!", 404);
+    }
+
+    const result = MemberResponseDto.fromEntity(member);
+    CacheService.set(cacheKey, result, 300);
+
+    return result;
+  }
+
+  async getAllMembersWithBorrowings(): Promise<MemberResponseDto[]> {
+    const cacheKey = "members_all_borrowings";
+    const cachedData = CacheService.get<MemberResponseDto[]>(cacheKey);
 
     if (cachedData) {
       return cachedData;
@@ -32,26 +78,9 @@ export class MemberService {
     const result = members.map((member) =>
       MemberResponseDto.fromEntity(member),
     );
+    CacheService.set(cacheKey, result, 300);
 
-    cache.set(cacheKey, result);
     return result;
-  }
-
-  async getMemberById(id: number): Promise<MemberResponseDto> {
-    const member = await this.memberRepository.findOneBy({ id });
-    if (!member) {
-      throw new AppError("Üzv tapılmadı!", 404);
-    }
-    return MemberResponseDto.fromEntity(member);
-  }
-
-  async getAllMembersWithBorrowings(): Promise<MemberResponseDto[]> {
-    const members = await AppDataSource.getRepository(Member)
-      .createQueryBuilder("member")
-      .leftJoinAndSelect("member.borrowings", "borrowings")
-      .getMany();
-
-    return members.map((member) => MemberResponseDto.fromEntity(member));
   }
 
   async updateMember(
@@ -67,6 +96,9 @@ export class MemberService {
     member.email = dto.email;
 
     const updated = await this.memberRepository.save(member);
+
+    CacheService.invalidatePattern("members");
+
     return MemberResponseDto.fromEntity(updated);
   }
 
@@ -75,6 +107,9 @@ export class MemberService {
     if (!member) {
       throw new AppError("Silinmək istənən üzv tapılmadı!", 404);
     }
+
     await this.memberRepository.remove(member);
+
+    CacheService.invalidatePattern("members");
   }
 }

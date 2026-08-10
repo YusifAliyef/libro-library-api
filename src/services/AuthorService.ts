@@ -3,7 +3,7 @@ import { Author } from "../entities/Author";
 import { CreateAuthorDto } from "../dtos/CreateAuthorDto";
 import { AuthorResponseDto } from "../dtos/AuthorResponseDto";
 import { AppError } from "../errors/AppError";
-import { cache } from "../config/cache";
+import { CacheService } from "../utils/cacheService";
 
 export class AuthorService {
   private authorRepository = AppDataSource.getRepository(Author);
@@ -14,6 +14,9 @@ export class AuthorService {
     author.biography = dto.biography || "";
 
     const saved = await this.authorRepository.save(author);
+
+    CacheService.invalidatePattern("authors");
+
     return AuthorResponseDto.fromEntity(saved);
   }
 
@@ -24,9 +27,10 @@ export class AuthorService {
     biography?: string;
   }) {
     const cacheKey = `authors_${JSON.stringify(queryParams)}`;
-    const cachedData = cache.get<any>(cacheKey);
+    const cachedData = CacheService.get<any>(cacheKey);
 
     if (cachedData) {
+      console.log("[CACHE HIT] Müəlliflər keşdən gətirildi.");
       return cachedData;
     }
 
@@ -63,26 +67,49 @@ export class AuthorService {
       totalPages: Math.ceil(total / limit),
     };
 
-    cache.set(cacheKey, result);
+    CacheService.set(cacheKey, result, 300);
 
     return result;
   }
 
   async getAuthorById(id: number): Promise<AuthorResponseDto> {
+    const cacheKey = `authors_id_${id}`;
+    const cachedData = CacheService.get<AuthorResponseDto>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
     const author = await this.authorRepository.findOneBy({ id });
     if (!author) {
       throw new AppError("Yazıçı tapılmadı!", 404);
     }
-    return AuthorResponseDto.fromEntity(author);
+
+    const result = AuthorResponseDto.fromEntity(author);
+    CacheService.set(cacheKey, result, 300);
+
+    return result;
   }
 
   async getAllAuthorsWithBooks(): Promise<AuthorResponseDto[]> {
+    const cacheKey = "authors_all_books";
+    const cachedData = CacheService.get<AuthorResponseDto[]>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
     const authors = await AppDataSource.getRepository(Author)
       .createQueryBuilder("author")
       .leftJoinAndSelect("author.books", "books")
       .getMany();
 
-    return authors.map((author) => AuthorResponseDto.fromEntity(author));
+    const result = authors.map((author) =>
+      AuthorResponseDto.fromEntity(author),
+    );
+    CacheService.set(cacheKey, result, 300);
+
+    return result;
   }
 
   async updateAuthor(
@@ -98,6 +125,9 @@ export class AuthorService {
     author.biography = dto.biography || "";
 
     const updated = await this.authorRepository.save(author);
+
+    CacheService.invalidatePattern("authors");
+
     return AuthorResponseDto.fromEntity(updated);
   }
 
@@ -106,6 +136,9 @@ export class AuthorService {
     if (!author) {
       throw new AppError("Silinmək istənən yazıçı tapılmadı!", 404);
     }
+
     await this.authorRepository.remove(author);
+
+    CacheService.invalidatePattern("authors");
   }
 }

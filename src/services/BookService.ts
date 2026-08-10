@@ -6,7 +6,8 @@ import { In } from "typeorm";
 import { CreateBookDto } from "../dtos/CreateBookDto";
 import { BookResponseDto } from "../dtos/BookResponseDto";
 import { AppError } from "../errors/AppError";
-import { cache } from "../config/cache";
+import { CacheService } from "../utils/cacheService";
+
 export class BookService {
   private bookRepository = AppDataSource.getRepository(Book);
   private authorRepository = AppDataSource.getRepository(Author);
@@ -31,6 +32,9 @@ export class BookService {
     }
 
     const saved = await this.bookRepository.save(book);
+
+    CacheService.invalidatePattern("books");
+
     return BookResponseDto.fromEntity(saved);
   }
 
@@ -65,6 +69,9 @@ export class BookService {
       const savedBook = await queryRunner.manager.save(book);
 
       await queryRunner.commitTransaction();
+
+      CacheService.invalidatePattern("books");
+
       return BookResponseDto.fromEntity(savedBook);
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -89,9 +96,15 @@ export class BookService {
     limit: number;
   }> {
     const cacheKey = `books_${JSON.stringify(queryParams)}`;
-    const cachedData = cache.get<any>(cacheKey);
+    const cachedData = CacheService.get<{
+      data: BookResponseDto[];
+      total: number;
+      page: number;
+      limit: number;
+    }>(cacheKey);
 
     if (cachedData) {
+      console.log("[CACHE HIT] Kitablar keşdən gətirildi.");
       return cachedData;
     }
 
@@ -134,22 +147,39 @@ export class BookService {
 
     const result = { data: mappedData, total, page, limit };
 
-    cache.set(cacheKey, result);
+    CacheService.set(cacheKey, result, 300);
 
     return result;
   }
 
   async getAllBooksWithRelations(): Promise<BookResponseDto[]> {
+    const cacheKey = "books_all_relations";
+    const cachedData = CacheService.get<BookResponseDto[]>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
     const books = await AppDataSource.getRepository(Book)
       .createQueryBuilder("book")
       .leftJoinAndSelect("book.author", "author")
       .leftJoinAndSelect("book.categories", "categories")
       .getMany();
 
-    return books.map((book) => BookResponseDto.fromEntity(book));
+    const result = books.map((book) => BookResponseDto.fromEntity(book));
+    CacheService.set(cacheKey, result, 300);
+
+    return result;
   }
 
   async getBookById(id: number): Promise<BookResponseDto> {
+    const cacheKey = `books_id_${id}`;
+    const cachedData = CacheService.get<BookResponseDto>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
     const book = await this.bookRepository.findOne({
       where: { id },
       relations: { author: true, categories: true },
@@ -158,7 +188,11 @@ export class BookService {
     if (!book) {
       throw new AppError("Kitab tapılmadı!", 404);
     }
-    return BookResponseDto.fromEntity(book);
+
+    const result = BookResponseDto.fromEntity(book);
+    CacheService.set(cacheKey, result, 300);
+
+    return result;
   }
 
   async updateBook(id: number, dto: CreateBookDto): Promise<BookResponseDto> {
@@ -192,6 +226,9 @@ export class BookService {
     book.isbn = dto.isbn;
 
     const updated = await this.bookRepository.save(book);
+
+    CacheService.invalidatePattern("books");
+
     return BookResponseDto.fromEntity(updated);
   }
 
@@ -201,5 +238,7 @@ export class BookService {
       throw new AppError("Silinmək istənən kitab tapılmadı!", 404);
     }
     await this.bookRepository.remove(book);
+
+    CacheService.invalidatePattern("books");
   }
 }

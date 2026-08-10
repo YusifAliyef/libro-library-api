@@ -3,7 +3,7 @@ import { Category } from "../entities/Category";
 import { CreateCategoryDto } from "../dtos/CreateCategoryDto";
 import { CategoryResponseDto } from "../dtos/CategoryResponseDto";
 import { AppError } from "../errors/AppError";
-import { cache } from "../config/cache";
+import { CacheService } from "../utils/cacheService";
 
 export class CategoryService {
   private categoryRepository = AppDataSource.getRepository(Category);
@@ -13,30 +13,46 @@ export class CategoryService {
     category.name = dto.name;
 
     const saved = await this.categoryRepository.save(category);
+
+    CacheService.invalidatePattern("categories");
+
     return CategoryResponseDto.fromEntity(saved);
   }
 
   async getAllCategories(): Promise<CategoryResponseDto[]> {
-    const cacheKey = "all_categories";
-    const cachedData = cache.get<CategoryResponseDto[]>(cacheKey);
+    const cacheKey = "categories_all";
+    const cachedData = CacheService.get<CategoryResponseDto[]>(cacheKey);
 
     if (cachedData) {
+      console.log("[CACHE HIT] Kateqoriyalar keşdən gətirildi.");
       return cachedData;
     }
 
     const categories = await AppDataSource.getRepository(Category).find();
     const result = categories.map((cat) => CategoryResponseDto.fromEntity(cat));
 
-    cache.set(cacheKey, result);
+    CacheService.set(cacheKey, result, 300);
+
     return result;
   }
 
   async getCategoryById(id: number): Promise<CategoryResponseDto> {
+    const cacheKey = `categories_id_${id}`;
+    const cachedData = CacheService.get<CategoryResponseDto>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
     const category = await this.categoryRepository.findOneBy({ id });
     if (!category) {
       throw new AppError("Kateqoriya tapılmadı!", 404);
     }
-    return CategoryResponseDto.fromEntity(category);
+
+    const result = CategoryResponseDto.fromEntity(category);
+    CacheService.set(cacheKey, result, 300);
+
+    return result;
   }
 
   async updateCategory(
@@ -51,6 +67,9 @@ export class CategoryService {
     category.name = dto.name;
 
     const updated = await this.categoryRepository.save(category);
+
+    CacheService.invalidatePattern("categories");
+
     return CategoryResponseDto.fromEntity(updated);
   }
 
@@ -59,6 +78,9 @@ export class CategoryService {
     if (!category) {
       throw new AppError("Silinmək istənən kateqoriya tapılmadı!", 404);
     }
+
     await this.categoryRepository.remove(category);
+
+    CacheService.invalidatePattern("categories");
   }
 }
