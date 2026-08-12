@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 
- // Hər gün gecə yarısı (00:00) avtomatik işləyən təmizləmə tapşırığı və uploads papqasındakı faylların sayını konsola çıxaran tapşırıq:
+
 export const initScheduledTasks = () => {
   cron.schedule("0 0 * * *", async () => {
     try {

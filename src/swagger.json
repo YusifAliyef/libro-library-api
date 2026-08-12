@@ -3,7 +3,7 @@
   "info": {
     "title": "Libro Library API",
     "version": "1.0.0",
-    "description": "Kitabxana idarəetmə sistemi üçün tam CRUD və Validasiya dəstəkli API sənədləşməsi"
+    "description": "Kitabxana idarəetmə sistemi üçün tam CRUD, Validasiya, Keşləmə və Filtrləmə dəstəkli API sənədləşməsi"
   },
   "servers": [
     {
@@ -25,7 +25,10 @@
                 "required": ["name"],
                 "properties": {
                   "name": { "type": "string", "example": "Nizami Gəncəvi" },
-                  "biography": { "type": "string", "example": "Dahi Azərbaycan şairi." }
+                  "biography": {
+                    "type": "string",
+                    "example": "Dahi Azərbaycan şairi."
+                  }
                 }
               }
             }
@@ -37,8 +40,22 @@
         }
       },
       "get": {
-        "summary": "Bütün yazıçıları siyahılayır",
+        "summary": "Müəllifləri filtirləmə və pagination ilə gətirir",
         "tags": ["Authors"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          { "name": "name", "in": "query", "schema": { "type": "string" } },
+          { "name": "biography", "in": "query", "schema": { "type": "string" } }
+        ],
         "responses": {
           "200": { "description": "Uğurlu əməliyyat" }
         }
@@ -48,7 +65,14 @@
       "get": {
         "summary": "ID-yə görə yazıçını tapır",
         "tags": ["Authors"],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
         "responses": {
           "200": { "description": "Uğurlu əməliyyat" },
           "404": { "description": "Yazıçı tapılmadı" }
@@ -57,7 +81,14 @@
       "put": {
         "summary": "Yazıçı məlumatlarını yeniləyir",
         "tags": ["Authors"],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -80,7 +111,14 @@
       "delete": {
         "summary": "Yazıçını silir",
         "tags": ["Authors"],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
         "responses": {
           "200": { "description": "Yazıçı uğurla silindi" },
           "404": { "description": "Yazıçı tapılmadı" }
@@ -101,7 +139,12 @@
                 "properties": {
                   "title": { "type": "string", "example": "Sirlər Xəzinəsi" },
                   "isbn": { "type": "string", "example": "978-9952-123-45-6" },
-                  "authorId": { "type": "integer", "example": 1 }
+                  "authorId": { "type": "integer", "example": 1 },
+                  "categoryIds": {
+                    "type": "array",
+                    "items": { "type": "integer" },
+                    "example": [1, 2]
+                  }
                 }
               }
             }
@@ -113,16 +156,58 @@
         }
       },
       "get": {
-        "summary": "Bütün kitabları pagination və sorting ilə gətirir",
+        "summary": "Bütün kitabları pagination, filtrləmə və sorting ilə gətirir",
         "tags": ["Books"],
         "parameters": [
-          { "name": "page", "in": "query", "description": "Səhifə nömrəsi", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "description": "Hər səhifədəki kitab sayı", "schema": { "type": "integer", "default": 1 } },
-          { "name": "sortBy", "in": "query", "description": "Çeşidləmə sahəsi", "schema": { "type": "string", "default": "id" } },
-          { "name": "sortOrder", "in": "query", "description": "Çeşidləmə istiqaməti", "schema": { "type": "string", "enum": ["ASC", "DESC"], "default": "ASC" } }
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Səhifə nömrəsi",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Hər səhifədəki kitab sayı",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Çeşidləmə sahəsi",
+            "schema": { "type": "string", "default": "id" }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "description": "Çeşidləmə istiqaməti",
+            "schema": {
+              "type": "string",
+              "enum": ["ASC", "DESC"],
+              "default": "ASC"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "description": "Kitab adına görə axtarış",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "authorName",
+            "in": "query",
+            "description": "Yazıçı adına görə axtarış",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "description": "Kateqoriyaya görə axtarış",
+            "schema": { "type": "integer" }
+          }
         ],
         "responses": {
-          "200": { "description": "Uğurlu əməliyyat (Məlumat və Metadata birlikdə)" }
+          "200": { "description": "Uğurlu əməliyyat" }
         }
       }
     },
@@ -130,7 +215,14 @@
       "get": {
         "summary": "ID-yə görə kitabı tapır",
         "tags": ["Books"],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
         "responses": {
           "200": { "description": "Uğurlu əməliyyat" },
           "404": { "description": "Kitab tapılmadı" }
@@ -139,7 +231,14 @@
       "put": {
         "summary": "Kitab məlumatlarını yeniləyir",
         "tags": ["Books"],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -149,7 +248,11 @@
                 "properties": {
                   "title": { "type": "string" },
                   "isbn": { "type": "string" },
-                  "authorId": { "type": "integer" }
+                  "authorId": { "type": "integer" },
+                  "categoryIds": {
+                    "type": "array",
+                    "items": { "type": "integer" }
+                  }
                 }
               }
             }
@@ -163,16 +266,114 @@
       "delete": {
         "summary": "Kitabı silir",
         "tags": ["Books"],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
         "responses": {
           "200": { "description": "Kitab uğurla silindi" },
           "404": { "description": "Kitab tapılmadı" }
         }
       }
     },
+    "/api/categories": {
+      "post": {
+        "summary": "Yeni kateqoriya yaradır",
+        "tags": ["Categories"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "example": "Bədii Ədəbiyyat" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Kateqoriya yaradıldı" }
+        }
+      },
+      "get": {
+        "summary": "Bütün kateqoriyaları gətirir",
+        "tags": ["Categories"],
+        "responses": {
+          "200": { "description": "Uğurlu əməliyyat" }
+        }
+      }
+    },
+    "/api/categories/{id}": {
+      "get": {
+        "summary": "ID-yə görə kateqoriyanı tapır",
+        "tags": ["Categories"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Uğurlu əməliyyat" },
+          "404": { "description": "Kateqoriya tapılmadı" }
+        }
+      },
+      "put": {
+        "summary": "Kateqoriyanı yeniləyir",
+        "tags": ["Categories"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Kateqoriya yeniləndi" }
+        }
+      },
+      "delete": {
+        "summary": "Kateqoriyanı silir",
+        "tags": ["Categories"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Kateqoriya silindi" }
+        }
+      }
+    },
     "/api/members": {
       "post": {
-        "summary": "Yeni üzv/istifadəçi yaradır",
+        "summary": "Yeni üzv yaradır",
         "tags": ["Members"],
         "requestBody": {
           "required": true,
@@ -191,7 +392,7 @@
         },
         "responses": {
           "201": { "description": "Üzv uğurla yaradıldı" },
-          "400": { "description": "Validasiya xətası (məsələn, yanlış email formatı)" }
+          "400": { "description": "Validasiya xətası" }
         }
       },
       "get": {
@@ -206,7 +407,14 @@
       "get": {
         "summary": "ID-yə görə üzvü tapır",
         "tags": ["Members"],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
         "responses": {
           "200": { "description": "Uğurlu əməliyyat" },
           "404": { "description": "Üzv tapılmadı" }
@@ -215,7 +423,14 @@
       "put": {
         "summary": "Üzv məlumatlarını yeniləyir",
         "tags": ["Members"],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -238,7 +453,14 @@
       "delete": {
         "summary": "Üzvü silir",
         "tags": ["Members"],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
         "responses": {
           "200": { "description": "Üzv uğurla silindi" },
           "404": { "description": "Üzv tapılmadı" }
